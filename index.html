@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WebOSINT — by flandreiii</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #020b07;
+      --panel: #050f0a;
+      --border: #0f3d22;
+      --green: #00ff6a;
+      --green-dim: #00c44f;
+      --green-dark: #003d18;
+      --green-glow: rgba(0,255,106,0.15);
+      --red: #ff2e4c;
+      --yellow: #f5c518;
+      --text: #b8ffd1;
+      --muted: #3d7a55;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-display: 'Orbitron', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* Scanlines overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Grid background */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,106,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,106,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 2rem 3rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: linear-gradient(180deg, rgba(0,255,106,0.04) 0%, transparent 100%);
+    }
+
+    .logo-block { display: flex; flex-direction: column; gap: 0.2rem; }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      color: var(--green);
+      text-shadow: 0 0 20px rgba(0,255,106,0.6), 0 0 60px rgba(0,255,106,0.2);
+      animation: flicker 8s infinite;
+    }
+
+    .logo span { color: var(--text); opacity: 0.5; }
+
+    .tagline {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    .github-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--green-dim);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      transition: all 0.2s;
+      background: transparent;
+    }
+    .github-link:hover {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-glow);
+      box-shadow: 0 0 12px rgba(0,255,106,0.2);
+    }
+    .github-link svg { width: 14px; height: 14px; fill: currentColor; }
+
+    /* ── MAIN ── */
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    /* Section label */
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.4em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+    .section-label::before { content: '//  '; color: var(--green); }
+
+    /* ── SEARCH BOX ── */
+    .search-panel {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 4px;
+      padding: 2rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .search-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      animation: sweep 3s linear infinite;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .phone-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .phone-input-wrap::before {
+      content: '▶';
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--green);
+      font-size: 0.7rem;
+      pointer-events: none;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: #030d06;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.85rem 1rem 0.85rem 2.5rem;
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      color: var(--green);
+      letter-spacing: 0.1em;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]::placeholder { color: var(--muted); }
+
+    input[type="text"]:focus {
+      border-color: var(--green-dim);
+      box-shadow: 0 0 0 2px rgba(0,255,106,0.1), inset 0 0 20px rgba(0,255,106,0.03);
+    }
+
+    .lookup-btn {
+      padding: 0.85rem 2rem;
+      background: var(--green-dark);
+      border: 1px solid var(--green-dim);
+      border-radius: 3px;
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--green);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .lookup-btn:hover:not(:disabled) {
+      background: rgba(0,255,106,0.15);
+      border-color: var(--green);
+      box-shadow: 0 0 20px rgba(0,255,106,0.3);
+      color: #fff;
+    }
+
+    .lookup-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .hint {
+      margin-top: 0.75rem;
+      font-size: 0.68rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .hint b { color: var(--green-dim); }
+
+    /* ── LOADER ── */
+    .loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 3rem;
+      text-align: center;
+    }
+    .loader.active { display: flex; }
+
+    .radar {
+      width: 80px; height: 80px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      position: relative;
+    }
+    .radar::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(0,255,106,0.3);
+      border-radius: 50%;
+    }
+    .radar::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 50%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green));
+      transform-origin: left center;
+      animation: spin 1.2s linear infinite;
+    }
+
+    .loader-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.2em;
+      animation: blink 1s step-end infinite;
+    }
+
+    /* ── RESULTS ── */
+    #results { display: none; animation: fadeIn 0.4s ease; }
+    #results.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .results-title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      color: var(--green);
+    }
+
+    .clear-btn {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      padding: 0.3rem 0.7rem;
+      border-radius: 3px;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { color: var(--red); border-color: var(--red); }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      animation: slideUp 0.3s ease both;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px; height: 100%;
+      background: var(--green);
+      opacity: 0.6;
+    }
+
+    .card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .card.error { border-color: rgba(255,46,76,0.4); }
+    .card.error::before { background: var(--red); }
+
+    .card-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    .card-value {
+      font-size: 1.05rem;
+      color: var(--green);
+      word-break: break-all;
+    }
+
+    .card-value.big {
+      font-size: 1.4rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+    }
+
+    .card-value.small { font-size: 0.85rem; color: var(--text); }
+
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 2px;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+    }
+    .tag.valid { background: rgba(0,255,106,0.12); color: var(--green); border: 1px solid rgba(0,255,106,0.3); }
+    .tag.invalid { background: rgba(255,46,76,0.12); color: var(--red); border: 1px solid rgba(255,46,76,0.3); }
+    .tag.mobile { background: rgba(245,197,24,0.1); color: var(--yellow); border: 1px solid rgba(245,197,24,0.3); }
+    .tag.landline { background: rgba(0,196,79,0.1); color: var(--green-dim); border: 1px solid rgba(0,196,79,0.3); }
+    .tag.voip { background: rgba(130,100,255,0.12); color: #a88aff; border: 1px solid rgba(130,100,255,0.3); }
+
+    /* ── ERROR BOX ── */
+    .error-box {
+      border: 1px solid rgba(255,46,76,0.3);
+      background: rgba(255,46,76,0.05);
+      border-radius: 4px;
+      padding: 1.5rem;
+      display: none;
+      margin-top: 1rem;
+    }
+    .error-box.visible { display: block; animation: fadeIn 0.3s ease; }
+    .error-box p { font-size: 0.85rem; color: var(--red); }
+    .error-box p::before { content: '⚠  '; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 10;
+      border-top: 1px solid var(--border);
+      padding: 1.2rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    footer a { color: var(--green-dim); text-decoration: none; }
+    footer a:hover { color: var(--green); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes flicker {
+      0%,95%,100% { opacity: 1; }
+      96% { opacity: 0.7; }
+      97% { opacity: 1; }
+      98% { opacity: 0.85; }
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+      50% { opacity: 0.4; box-shadow: 0 0 3px var(--green); }
+    }
+    @keyframes sweep {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Stagger cards */
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.1s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.2s; }
+    .card:nth-child(5) { animation-delay: 0.25s; }
+    .card:nth-child(6) { animation-delay: 0.3s; }
+    .card:nth-child(7) { animation-delay: 0.35s; }
+    .card:nth-child(8) { animation-delay: 0.4s; }
+
+    @media (max-width: 600px) {
+      header { padding: 1.2rem; flex-wrap: wrap; }
+      main { padding: 2rem 1rem 3rem; }
+      footer { padding: 1rem; }
+      .input-row { flex-direction: column; }
+      .lookup-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-block">
+      <div class="logo">WEB<span>OSINT</span></div>
+      <div class="tagline">Open Source Intelligence Terminal — v2.4.1</div>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot"></div>
+        SYSTEM ONLINE
+      </div>
+      <a class="github-link" href="https://github.com/flandreiii" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        flandreiii
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main>
+    <!-- Search Panel -->
+    <div class="search-panel">
+      <div class="section-label">Phone Number Intelligence</div>
+      <div class="input-row">
+        <div class="phone-input-wrap">
+          <input type="text" id="phoneInput" placeholder="+1 234 567 8900" maxlength="20" autocomplete="off" spellcheck="false"/>
+        </div>
+        <button class="lookup-btn" id="lookupBtn" onclick="lookup()">SCAN</button>
+      </div>
+      <div class="hint">Enter a phone number with country code. Example: <b>+44 7911 123456</b></div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+      <div class="radar"></div>
+      <div class="loader-text">SCANNING TARGET...</div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="errorBox">
+      <p id="errorMsg">An error occurred.</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+      <div class="results-header">
+        <div class="results-title">// INTELLIGENCE REPORT</div>
+        <button class="clear-btn" onclick="clearResults()">CLEAR</button>
+      </div>
+      <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>WEBOSINT &copy; 2025 — made by <a href="https://github.com/flandreiii" target="_blank">flandreiii</a></span>
+    <span>FOR EDUCATIONAL &amp; RESEARCH USE ONLY</span>
+    <span>DATA: RESTCOUNTRIES.COM + LOCAL PARSE</span>
+  </footer>
+
+  <script>
+    const phoneInput = document.getElementById('phoneInput');
+    phoneInput.addEventListener('keydown', e => { if (e.key === 'Enter') lookup(); });
+
+    async function lookup() {
+      const raw = phoneInput.value.trim();
+      if (!raw) { showError('Please enter a phone number.'); return; }
+      const phone = raw.replace(/\s+/g, '');
+      setLoading(true); clearResults(); hideError();
+      try {
+        // Step 1: local prefix parse (always works, no network needed)
+        const data = localParse(phone);
+
+        // Step 2: enrich with restcountries.com (free, no key, CORS open)
+        if (data.iso2 && data.iso2 !== 'XX') {
+          try {
+            const r = await fetch(
+              `https://restcountries.com/v3.1/alpha/${data.iso2}`,
+              { signal: AbortSignal.timeout(5000) }
+            );
+            if (r.ok) {
+              const arr = await r.json();
+              if (arr?.[0]) {
+                const rc = arr[0];
+                data.country_name    = rc.name?.common || data.country_name;
+                data.capital         = rc.capital?.[0] || '';
+                data.region          = rc.region || '';
+                data.subregion       = rc.subregion || '';
+                data.population      = rc.population ? rc.population.toLocaleString() : '';
+                data.timezone        = rc.timezones?.[0] || '';
+                data.currencies      = rc.currencies
+                  ? Object.values(rc.currencies).map(c => `${c.name}${c.symbol ? ' ('+c.symbol+')' : ''}`).join(', ')
+                  : '';
+                data.languages       = rc.languages ? Object.values(rc.languages).join(', ') : '';
+                data.flag            = rc.flag || '';
+                data._enriched       = true;
+              }
+            }
+          } catch (_) {}
+        }
+
+        renderResults(data, phone);
+      } catch (err) {
+        showError('Lookup failed: ' + (err.message || 'Network error'));
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function localParse(phone) {
+      // Local heuristic parsing for demo / offline use
+      const cleaned = phone.replace(/[^\d+]/g, '');
+      let countryCode = '', nationalNumber = '', country = '', iso = '', location = '', carrier = '', lineType = '';
+
+      // Detect country code
+      const prefixMap = {
+        '+1': ['US/CA', 'United States / Canada', 'US'],
+        '+7': ['RU', 'Russia', 'RU'],
+        '+20': ['EG', 'Egypt', 'EG'],
+        '+27': ['ZA', 'South Africa', 'ZA'],
+        '+30': ['GR', 'Greece', 'GR'],
+        '+31': ['NL', 'Netherlands', 'NL'],
+        '+32': ['BE', 'Belgium', 'BE'],
+        '+33': ['FR', 'France', 'FR'],
+        '+34': ['ES', 'Spain', 'ES'],
+        '+36': ['HU', 'Hungary', 'HU'],
+        '+39': ['IT', 'Italy', 'IT'],
+        '+40': ['RO', 'Romania', 'RO'],
+        '+41': ['CH', 'Switzerland', 'CH'],
+        '+43': ['AT', 'Austria', 'AT'],
+        '+44': ['GB', 'United Kingdom', 'GB'],
+        '+45': ['DK', 'Denmark', 'DK'],
+        '+46': ['SE', 'Sweden', 'SE'],
+        '+47': ['NO', 'Norway', 'NO'],
+        '+48': ['PL', 'Poland', 'PL'],
+        '+49': ['DE', 'Germany', 'DE'],
+        '+51': ['PE', 'Peru', 'PE'],
+        '+52': ['MX', 'Mexico', 'MX'],
+        '+54': ['AR', 'Argentina', 'AR'],
+        '+55': ['BR', 'Brazil', 'BR'],
+        '+56': ['CL', 'Chile', 'CL'],
+        '+57': ['CO', 'Colombia', 'CO'],
+        '+60': ['MY', 'Malaysia', 'MY'],
+        '+61': ['AU', 'Australia', 'AU'],
+        '+62': ['ID', 'Indonesia', 'ID'],
+        '+63': ['PH', 'Philippines', 'PH'],
+        '+64': ['NZ', 'New Zealand', 'NZ'],
+        '+65': ['SG', 'Singapore', 'SG'],
+        '+66': ['TH', 'Thailand', 'TH'],
+        '+81': ['JP', 'Japan', 'JP'],
+        '+82': ['KR', 'South Korea', 'KR'],
+        '+84': ['VN', 'Vietnam', 'VN'],
+        '+86': ['CN', 'China', 'CN'],
+        '+90': ['TR', 'Turkey', 'TR'],
+        '+91': ['IN', 'India', 'IN'],
+        '+92': ['PK', 'Pakistan', 'PK'],
+        '+93': ['AF', 'Afghanistan', 'AF'],
+        '+94': ['LK', 'Sri Lanka', 'LK'],
+        '+95': ['MM', 'Myanmar', 'MM'],
+        '+98': ['IR', 'Iran', 'IR'],
+        '+212': ['MA', 'Morocco', 'MA'],
+        '+213': ['DZ', 'Algeria', 'DZ'],
+        '+216': ['TN', 'Tunisia', 'TN'],
+        '+218': ['LY', 'Libya', 'LY'],
+        '+220': ['GM', 'Gambia', 'GM'],
+        '+234': ['NG', 'Nigeria', 'NG'],
+        '+254': ['KE', 'Kenya', 'KE'],
+        '+351': ['PT', 'Portugal', 'PT'],
+        '+352': ['LU', 'Luxembourg', 'LU'],
+        '+353': ['IE', 'Ireland', 'IE'],
+        '+354': ['IS', 'Iceland', 'IS'],
+        '+358': ['FI', 'Finland', 'FI'],
+        '+359': ['BG', 'Bulgaria', 'BG'],
+        '+380': ['UA', 'Ukraine', 'UA'],
+        '+381': ['RS', 'Serbia', 'RS'],
+        '+385': ['HR', 'Croatia', 'HR'],
+        '+386': ['SI', 'Slovenia', 'SI'],
+        '+420': ['CZ', 'Czech Republic', 'CZ'],
+        '+421': ['SK', 'Slovakia', 'SK'],
+        '+966': ['SA', 'Saudi Arabia', 'SA'],
+        '+971': ['AE', 'UAE', 'AE'],
+        '+972': ['IL', 'Israel', 'IL'],
+        '+974': ['QA', 'Qatar', 'QA'],
+        '+998': ['UZ', 'Uzbekistan', 'UZ'],
+      };
+
+      let matched = false;
+      for (const [prefix, info] of Object.entries(prefixMap)) {
+        if (cleaned.startsWith(prefix)) {
+          countryCode = prefix;
+          nationalNumber = cleaned.slice(prefix.length);
+          country = info[1];
+          iso = info[2];
+          matched = true;
+          break;
+        }
+      }
+
+      if (!matched && cleaned.startsWith('+')) {
+        countryCode = cleaned.slice(0, 3);
+        nationalNumber = cleaned.slice(3);
+        country = 'Unknown';
+        iso = 'XX';
+      }
+
+      const len = cleaned.replace('+', '').length;
+      const isValid = len >= 10 && len <= 15 && cleaned.startsWith('+');
+
+      // Heuristic line type
+      const mobileStarts = ['07','08','09','06','04','05'];
+      lineType = mobileStarts.some(s => nationalNumber.startsWith(s)) ? 'mobile' : 'landline';
+
+      return {
+        valid: isValid,
+        number: cleaned,
+        local_format: nationalNumber,
+        international_format: cleaned,
+        country_code: countryCode.replace('+',''),
+        country_name: country,
+        country_prefix: countryCode,
+        iso2: iso,
+        location: country,
+        carrier: 'N/A',
+        line_type: lineType,
+      };
+    }
+
+    function renderResults(data, rawPhone) {
+      const grid = document.getElementById('cardsGrid');
+      grid.innerHTML = '';
+
+      const valid    = data.valid !== false;
+      const intl     = data.international_format || data.number || rawPhone;
+      const local    = data.local_format || '';
+      const country  = data.country_name || 'N/A';
+      const cc       = data.country_code || data.country_prefix || 'N/A';
+      const carrier  = data.carrier || 'N/A';
+      const lineType = data.line_type || 'N/A';
+
+      // Timezone: enriched first, fallback map
+      const tzFallback = {
+        'US':'America/New_York','CA':'America/Toronto','GB':'Europe/London',
+        'FR':'Europe/Paris','DE':'Europe/Berlin','IT':'Europe/Rome','ES':'Europe/Madrid',
+        'RU':'Europe/Moscow','IN':'Asia/Kolkata','CN':'Asia/Shanghai','JP':'Asia/Tokyo',
+        'AU':'Australia/Sydney','BR':'America/Sao_Paulo','MX':'America/Mexico_City',
+        'RO':'Europe/Bucharest','UA':'Europe/Kiev','PL':'Europe/Warsaw','NL':'Europe/Amsterdam',
+        'BE':'Europe/Brussels','SE':'Europe/Stockholm','NO':'Europe/Oslo','DK':'Europe/Copenhagen',
+        'FI':'Europe/Helsinki','PT':'Europe/Lisbon','GR':'Europe/Athens','TR':'Europe/Istanbul',
+        'SA':'Asia/Riyadh','AE':'Asia/Dubai','SG':'Asia/Singapore','KR':'Asia/Seoul',
+        'ZA':'Africa/Johannesburg','NG':'Africa/Lagos','EG':'Africa/Cairo',
+        'AR':'America/Argentina/Buenos_Aires','CL':'America/Santiago','CO':'America/Bogota','PE':'America/Lima',
+      };
+      const timezone = data.timezone || tzFallback[data.iso2] || tzFallback[cc] || 'N/A';
+
+      const now = new Date().toISOString().replace('T',' ').slice(0,19);
+      const validTag = valid
+        ? '<span class="tag valid">✓ VALID</span>'
+        : '<span class="tag invalid">✗ INVALID</span>';
+      const lt = lineType.toLowerCase();
+      let ltTag = lt.includes('mobile')||lt.includes('cellular') ? '<span class="tag mobile">MOBILE</span>'
+                : lt.includes('voip')   ? '<span class="tag voip">VOIP</span>'
+                : lt.includes('land')||lt.includes('fixed') ? '<span class="tag landline">LANDLINE</span>'
+                : `<span class="tag landline">${lineType.toUpperCase()}</span>`;
+
+      const cards = [
+        { label: 'Number',             value: `<span class="big">${intl}</span>` },
+        { label: 'Status',             value: validTag },
+        { label: 'Local Format',       value: local || 'N/A' },
+        { label: 'Country',            value: `${data.flag||''} ${country}`.trim() },
+        { label: 'Country Code',       value: '+' + cc },
+        { label: 'Line Type',          value: ltTag },
+        { label: 'Timezone',           value: timezone },
+        { label: 'Carrier / Operator', value: carrier },
+      ];
+
+      // Enriched fields from restcountries
+      if (data._enriched) {
+        if (data.capital)    cards.push({ label: 'Capital',    value: data.capital });
+        if (data.region)     cards.push({ label: 'Region',     value: data.region + (data.subregion ? ' / '+data.subregion : '') });
+        if (data.population) cards.push({ label: 'Population', value: data.population });
+        if (data.currencies) cards.push({ label: 'Currency',   value: data.currencies });
+        if (data.languages)  cards.push({ label: 'Languages',  value: data.languages });
+      }
+
+      cards.push({ label: 'Scan Timestamp (UTC)', value: `<span class="small">${now}</span>` });
+
+      cards.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<div class="card-label">${c.label}</div><div class="card-value">${c.value}</div>`;
+        grid.appendChild(div);
+      });
+
+      document.getElementById('results').classList.add('visible');
+    }
+
+    function setLoading(on) {
+      document.getElementById('loader').classList.toggle('active', on);
+      document.getElementById('lookupBtn').disabled = on;
+    }
+
+    function clearResults() {
+      document.getElementById('results').classList.remove('visible');
+      document.getElementById('cardsGrid').innerHTML = '';
+    }
+
+    function showError(msg) {
+      document.getElementById('errorMsg').textContent = msg;
+      document.getElementById('errorBox').classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('errorBox').classList.remove('visible');
+    }
+  </script>
+
+</body>
+</html>
